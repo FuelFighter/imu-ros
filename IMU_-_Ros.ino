@@ -13,34 +13,31 @@
 BNO080 myIMU;
 
 int sample_time = 50;
+
+//Declarations
 ros::NodeHandle nh;
-
 sensor_msgs::Imu imu_msg;
-ros::Publisher pub_ext_imu( "/ext_imu", &imu_msg);
-
-float zeroMatrix[] = {0,0,0,0,0,0,0,0,0};
-
+ros::Publisher pub_ext_imu( "/ext_imu", &imu_msg); //Create topic
 char frameid[] = "/ext_imu";
 
 void setup()
 {
-  Serial.begin(9600);
+  // For I2C communication with IMU
   Wire.begin();
+
   myIMU.begin();
   Wire.setClock(400000); //Increase I2C data rate to 400kHz
 
+  //Enable sensors
+  myIMU.enableAccelerometer(sample_time); 
+  myIMU.enableGyro(sample_time);
+  myIMU.enableMagnetometer(sample_time);
   
-  myIMU.enableAccelerometer(sample_time); //Send data update every 50ms
-  myIMU.enableGyro(50);
-  myIMU.enableMagnetometer(50);
-
-  imu_msg.orientation.w = 0;
 
 
   nh.initNode();
-  nh.advertise(pub_ext_imu);
-
-    
+  nh.advertise(pub_ext_imu); //tell the world that the topic exist
+  
   imu_msg.header.frame_id =  frameid;
 }
 
@@ -62,8 +59,13 @@ void loop()
     imu_msg.linear_acceleration.x = myIMU.getAccelX();
     imu_msg.linear_acceleration.y = myIMU.getAccelY();
     imu_msg.linear_acceleration.z = myIMU.getAccelZ();
+
+    //Setting timestamp
     imu_msg.header.stamp = nh.now();
+
+    //Publish the message
     pub_ext_imu.publish(&imu_msg);
   }
+
   nh.spinOnce();
 }
